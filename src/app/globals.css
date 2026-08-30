@@ -1,0 +1,155 @@
+@import url("https://fonts.googleapis.com/css2?family=Oswald:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600;1,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0b0b0c;
+  --color-coal: #111112;
+  --color-panel: #17171a;
+  --color-panel2: #1e1e22;
+  --color-line: #2a2a2f;
+  --color-brand: #e50914;
+  --color-flame: #ff2a2a;
+  --color-gold: #d4af37;
+  --color-goldsoft: #e9cd6f;
+  --color-mute: #a6a6ad;
+
+  --font-display: "Oswald", "Arial Narrow", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0b0b0c !important;
+  background-image: 
+    linear-gradient(to bottom, rgba(11, 11, 12, 0.70), rgba(11, 11, 12, 0.80)),
+    url("/images/seamless-bg.jpg") !important;
+  background-repeat: repeat;
+  background-position: center top;
+  background-size: cover;
+  color: #ffffff;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: #111112;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #111112;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2f;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e50914;
+}
+
+/* angled sporty cut corners */
+.clip-angle {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+}
+
+.stripes-red {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.07) 0 2px,
+    transparent 2px 16px
+  );
+}
+
+.stripes-dark {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.03) 0 2px,
+    transparent 2px 18px
+  );
+}
+
+.glow-gold {
+  text-shadow: 0 0 14px rgba(212, 175, 55, 0.5);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: rise 0.6s ease-out both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-toast {
+  animation: toast-in 0.25s ease-out both;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* Убираем уродливую полосу прокрутки для мобильных свайп-меню */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #17171a 0%, #222227 40%, #17171a 80%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}

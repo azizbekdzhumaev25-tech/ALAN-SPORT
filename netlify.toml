@@ -1,0 +1,23 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+# Next.js на Netlify требует этот плагин - устанавливается автоматически
+# Если сборки падают, Netlify сам предложит установить @netlify/plugin-nextjs
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Функции Netlify имеют лимит на размер body - увеличиваем для загрузки картинок base64
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["data/**"]

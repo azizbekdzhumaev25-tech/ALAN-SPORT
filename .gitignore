@@ -1,0 +1,33 @@
+# Секреты и пароли
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Netlify
+.netlify/
+.netlify.toml
+
+# Vercel
+.vercel
+
+# Загруженные картинки и данные (генерируются на сервере, не коммитим)
+data/*.json
+
+# Логи и временные файлы
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
