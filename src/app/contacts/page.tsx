@@ -91,12 +91,6 @@ export default function ContactsPage() {
                 >
                   {SITE.phone}
                 </a>
-                <a
-                  href={SITE.phone2Href}
-                  className="block font-display text-base font-bold text-white transition hover:text-gold md:text-xl"
-                >
-                  {SITE.phone2}
-                </a>
               </div>
               <p className="mt-1.5 text-[11px] leading-snug text-mute md:mt-3 md:text-xs">
                 Qo'ng'iroqlar har kuni 09:00–23:00 da qabul qilinadi.

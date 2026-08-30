@@ -91,12 +91,6 @@ export default function Footer() {
                 {SITE.phone}
               </a>
             </li>
-            <li>
-              <a href={SITE.phone2Href} className="flex items-center gap-2 transition hover:text-white">
-                <IconPhone className="h-4 w-4 text-brand" />
-                {SITE.phone2}
-              </a>
-            </li>
             <li className="flex items-start gap-2">
               <IconMapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
               {SITE.address}

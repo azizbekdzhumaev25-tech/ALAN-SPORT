@@ -3,14 +3,12 @@ export const SITE = {
   tagline: "Kuch. Tezlik. Uslub.",
   phone: "+998 93 476 27 27",
   phoneHref: "tel:+998934762727",
-  phone2: "+998 93 473 00 00",
-  phone2Href: "tel:+998934730000",
   address: "Buxoro shahri, Xafiz Tanish Buxori ko'chasi, 10",
   hours: "Har kuni: 09:00 – 23:00",
   telegram: "https://t.me/alan_sport_uz",
   telegramUser: "@alan_sport_uz",
-  instagram: "https://www.instagram.com/kurbanov____888/",
-  instagramUser: "@kurbanov____888",
+  instagram: "https://www.instagram.com/alan_sport_uz?igsi=MWxwdmxlOXAwOHV6dg==",
+  instagramUser: "@alan_sport_uz",
   mapEmbed:
     "https://yandex.ru/map-widget/v1/?lang=ru_RU&scroll=true&mode=search&text=%D0%91%D1%83%D1%85%D0%B0%D1%80%D0%B0%2C%20%D1%83%D0%BB%D0%B8%D1%86%D0%B0%20%D0%A5%D0%B0%D1%84%D0%B8%D0%B7%D0%B0%20%D0%A2%D0%B0%D0%BD%D0%B8%D1%88%D0%B0%20%D0%91%D1%83%D1%85%D0%B0%D1%80%D0%B8%2C%2010&z=17",
 };
