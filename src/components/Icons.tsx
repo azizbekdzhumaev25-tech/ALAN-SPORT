@@ -204,6 +204,14 @@ export function IconEye(p: IconProps) {
   );
 }
 
+export function IconEyeOff(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 3l18 18M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-1.2M9.9 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a14.5 14.5 0 0 1-3.1 4.2M14.8 14.8A10.5 10.5 0 0 1 12 19c-6.5 0-10-7-10-7a14.5 14.5 0 0 1 5.2-5.6" />
+    </svg>
+  );
+}
+
 export function IconSort(p: IconProps) {
   return (
     <svg {...base(p)}>

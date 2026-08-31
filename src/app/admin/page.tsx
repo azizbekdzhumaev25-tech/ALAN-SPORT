@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CATEGORIES, formatPrice } from "@/lib/site";
-import { IconArrowRight, IconRefresh, IconSearch } from "@/components/Icons";
+import { IconArrowRight, IconEye, IconEyeOff, IconRefresh, IconSearch } from "@/components/Icons";
 import ImageEditor from "@/components/ImageEditor";
 
 type Product = {
@@ -152,6 +152,10 @@ export default function AdminPage() {
   const [confirmPassInput, setConfirmPassInput] = useState("");
   const [passChangeMsg, setPassChangeMsg] = useState("");
   const [hasCustomPass, setHasCustomPass] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Загружаем данные только пока открыта активная сессия в памяти
   useEffect(() => {
@@ -751,13 +755,23 @@ export default function AdminPage() {
           <p className="mt-2 text-xs text-mute">Tizimga kirish uchun parolni kiriting</p>
 
           <form onSubmit={login} className="mt-6 space-y-4">
-            <input
-              type="password"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              placeholder="Parolni kiriting..."
-              className="w-full border border-line bg-coal px-4 py-3 text-center text-sm font-bold tracking-widest text-white outline-none focus:border-brand"
-            />
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                placeholder="Parolni kiriting..."
+                className="w-full border border-line bg-coal px-4 py-3 pr-11 text-center text-sm font-bold tracking-widest text-white outline-none focus:border-brand"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                aria-label={showPass ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-mute hover:text-white"
+              >
+                {showPass ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+              </button>
+            </div>
             <button
               type="submit"
               className="w-full bg-brand py-3 font-display text-sm font-bold tracking-widest text-white uppercase transition hover:bg-flame"
@@ -872,15 +886,30 @@ export default function AdminPage() {
           <form onSubmit={handleChangePassword} className="mt-4 space-y-3 max-w-md">
             <label className="block">
               <span className="text-xs font-bold text-mute uppercase">Eski parol *</span>
-              <input type="password" value={oldPassInput} onChange={(e)=>setOldPassInput(e.target.value)} placeholder="Eski parolni kiriting" className="mt-1 w-full border border-line bg-coal px-3 py-2 text-sm text-white outline-none focus:border-brand" />
+              <div className="relative mt-1">
+                <input type={showOld ? "text" : "password"} value={oldPassInput} onChange={(e)=>setOldPassInput(e.target.value)} placeholder="Eski parolni kiriting" className="w-full border border-line bg-coal px-3 py-2 pr-10 text-sm text-white outline-none focus:border-brand" />
+                <button type="button" onClick={()=>setShowOld(v=>!v)} aria-label={showOld ? "Yashirish" : "Ko'rsatish"} className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-mute hover:text-white">
+                  {showOld ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </button>
+              </div>
             </label>
             <label className="block">
               <span className="text-xs font-bold text-mute uppercase">Yangi parol * (kamida 6 ta belgi)</span>
-              <input type="password" value={newPassInput} onChange={(e)=>setNewPassInput(e.target.value)} placeholder="Yangi parol" className="mt-1 w-full border border-line bg-coal px-3 py-2 text-sm text-white outline-none focus:border-brand" />
+              <div className="relative mt-1">
+                <input type={showNew ? "text" : "password"} value={newPassInput} onChange={(e)=>setNewPassInput(e.target.value)} placeholder="Yangi parol" className="w-full border border-line bg-coal px-3 py-2 pr-10 text-sm text-white outline-none focus:border-brand" />
+                <button type="button" onClick={()=>setShowNew(v=>!v)} aria-label={showNew ? "Yashirish" : "Ko'rsatish"} className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-mute hover:text-white">
+                  {showNew ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </button>
+              </div>
             </label>
             <label className="block">
               <span className="text-xs font-bold text-mute uppercase">Tasdiqlash *</span>
-              <input type="password" value={confirmPassInput} onChange={(e)=>setConfirmPassInput(e.target.value)} placeholder="Yangi parolni qayta kiriting" className="mt-1 w-full border border-line bg-coal px-3 py-2 text-sm text-white outline-none focus:border-brand" />
+              <div className="relative mt-1">
+                <input type={showConfirm ? "text" : "password"} value={confirmPassInput} onChange={(e)=>setConfirmPassInput(e.target.value)} placeholder="Yangi parolni qayta kiriting" className="w-full border border-line bg-coal px-3 py-2 pr-10 text-sm text-white outline-none focus:border-brand" />
+                <button type="button" onClick={()=>setShowConfirm(v=>!v)} aria-label={showConfirm ? "Yashirish" : "Ko'rsatish"} className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center text-mute hover:text-white">
+                  {showConfirm ? <IconEyeOff className="h-4 w-4" /> : <IconEye className="h-4 w-4" />}
+                </button>
+              </div>
             </label>
             {passChangeMsg && <div className="bg-panel2 border border-line px-3 py-2 text-sm font-bold text-white">{passChangeMsg}</div>}
             <div className="flex gap-2">
