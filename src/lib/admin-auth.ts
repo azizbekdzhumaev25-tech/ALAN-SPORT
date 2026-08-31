@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { getStoredHash, verifyPasswordSync } from "./admin-store";
 
 // Пароль ТОЛЬКО на сервере (лучше потом вынести в .env)
 const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || "alan2026").trim();
@@ -6,6 +7,15 @@ const AUTH_SECRET = (process.env.ADMIN_SECRET || "alan-sport-secret-change-me-20
 
 // Простой токен = HMAC(password_ok + timestamp)
 export function checkPassword(password: string): boolean {
+  // 1. Проверяем кастомный пароль из data/admin.json (если клиент менял через админку — без серверов/БД)
+  try {
+    const customHash = getStoredHash();
+    if (customHash) {
+      return verifyPasswordSync(password, customHash);
+    }
+  } catch {
+    // fallback к env
+  }
   return password === ADMIN_PASSWORD;
 }
 

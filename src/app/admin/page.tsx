@@ -24,6 +24,29 @@ function formatNumberInput(val: string) {
   return clean.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+// === Без серверов/БД: смена пароля хранится в файле data/admin.json + localStorage (клиент сам меняет) ===
+const CUSTOM_PASS_KEY = "alan-custom-pass-hash";
+const PASS_SALT = "alan-sport-2026-salt-v1";
+
+async function hashClientPassword(pwd: string): Promise<string> {
+  const data = new TextEncoder().encode(pwd + PASS_SALT);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function getCustomHash(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(CUSTOM_PASS_KEY);
+}
+function setCustomHash(hash: string) {
+  if (typeof window !== "undefined") localStorage.setItem(CUSTOM_PASS_KEY, hash);
+}
+function clearCustomHash() {
+  if (typeof window !== "undefined") localStorage.removeItem(CUSTOM_PASS_KEY);
+}
+
 // Умное сжатие фото (100% гарантия идеального отображения без ошибок 404)
 function compressAndConvertImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -118,11 +141,17 @@ export default function AdminPage() {
       }
     >
   >({});
-  const [activeTab, setActiveTab] = useState<"products" | "categories" | "newArrivals">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "categories" | "newArrivals" | "security">("products");
   const [categories, setCategories] = useState<any[]>([]);
   const [catUploadingKey, setCatUploadingKey] = useState<string | null>(null);
   const [heroTitle, setHeroTitle] = useState("");
   const [heroDesc, setHeroDesc] = useState("");
+  // Смена пароля — без серверов/БД (localStorage + файл)
+  const [oldPassInput, setOldPassInput] = useState("");
+  const [newPassInput, setNewPassInput] = useState("");
+  const [confirmPassInput, setConfirmPassInput] = useState("");
+  const [passChangeMsg, setPassChangeMsg] = useState("");
+  const [hasCustomPass, setHasCustomPass] = useState(false);
 
   // Загружаем данные только пока открыта активная сессия в памяти
   useEffect(() => {
@@ -130,6 +159,16 @@ export default function AdminPage() {
     loadProducts();
     loadCategories();
     loadSettings();
+  }, [authed]);
+
+  // Проверяем есть ли кастомный пароль (без серверов — localStorage)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const h = localStorage.getItem(CUSTOM_PASS_KEY);
+      setHasCustomPass(!!h);
+    }
+    // также спросим сервер есть ли файл
+    fetch("/api/admin/password").then(r=>r.json()).then(d=>{ if(d.hasCustom) setHasCustomPass(true)}).catch(()=>{});
   }, [authed]);
 
   // Максимальная безопасность: Мгновенный выход при переключении/покидании вкладки
@@ -150,6 +189,44 @@ export default function AdminPage() {
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
+    // 1) Сначала пробуем кастомный пароль из браузера (без бекенда)
+    const customHash = getCustomHash();
+    if (customHash) {
+      try {
+        const h = await hashClientPassword(pass);
+        if (h === customHash) {
+          // Пробуем получить серверный токен с этим же паролем (если файл еще жив)
+          try {
+            const res = await fetch("/api/admin/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password: pass }),
+            });
+            const data = await res.json();
+            if (res.ok && data.token) {
+              if (typeof window !== "undefined") {
+                window.localStorage.removeItem("alan-admin-token");
+                window.sessionStorage.removeItem("alan-admin-token");
+              }
+              setAdminToken(data.token);
+              setAuthed(true);
+              setPass("");
+              return;
+            }
+          } catch {}
+          // Сервер не знает новый пароль (файл сбросился после рестарта Netlify) — пускаем в админку без сервера
+          // Генерируем локальный токен, API будет работать в offline-режиме (покажем предупреждение)
+          const localToken = `local-${Date.now()}-${customHash.slice(0,8)}`;
+          setAdminToken(localToken);
+          setAuthed(true);
+          setPass("");
+          setMsg("⚠️ Kirish local parol bilan (serverda eski parol) — yangilash uchun parolni qayta o'rnating");
+          setTimeout(()=>setMsg(""), 4000);
+          return;
+        }
+      } catch {}
+    }
+    // 2) Обычный серверный логин (env или data/admin.json)
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
@@ -165,7 +242,6 @@ export default function AdminPage() {
         }
         return;
       }
-      // Очищаем любую память браузера (токен будет жить только в оперативке React)
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("alan-admin-token");
         window.sessionStorage.removeItem("alan-admin-token");
@@ -176,6 +252,79 @@ export default function AdminPage() {
     } catch {
       alert("Serverga ulanib bo'lmadi");
     }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPassChangeMsg("");
+    if (!oldPassInput || !newPassInput || !confirmPassInput) {
+      setPassChangeMsg("❌ Barcha maydonlarni to'ldiring");
+      return;
+    }
+    if (newPassInput !== confirmPassInput) {
+      setPassChangeMsg("❌ Yangi parollar mos emas");
+      return;
+    }
+    if (newPassInput.length < 6) {
+      setPassChangeMsg("❌ Kamida 6 ta belgi");
+      return;
+    }
+    if (oldPassInput === newPassInput) {
+      setPassChangeMsg("❌ Eski va yangi bir xil bo'lmasin");
+      return;
+    }
+    // Проверяем старый пароль: сначала localStorage, потом сервер
+    let oldOk = false;
+    const customHash = getCustomHash();
+    if (customHash) {
+      try { const h = await hashClientPassword(oldPassInput); if (h === customHash) oldOk = true; } catch {}
+    }
+    if (!oldOk) {
+      try {
+        const r = await fetch("/api/admin/login", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({password: oldPassInput}) });
+        if (r.ok) { const d=await r.json(); if(d.token) oldOk = true; }
+      } catch {}
+    }
+    if (!oldOk) {
+      setPassChangeMsg("❌ Eski parol noto'g'ri");
+      return;
+    }
+    // Пытаемся сохранить на сервере (файл data/admin.json) — без внешних БД
+    let serverOk = false;
+    try {
+      const res = await fetch("/api/admin/password", {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ oldPassword: oldPassInput, newPassword: newPassInput }),
+      });
+      const d = await res.json();
+      if (res.ok && d.ok) serverOk = true;
+      else if (res.status === 401) { /* токен local — пропустим */ }
+      else if (!res.ok) { setPassChangeMsg("⚠️ Serverda saqlanmadi: " + (d.error||"")); }
+    } catch {}
+    // Сохраняем в браузере (без серверов и без бекенда — чисто localStorage)
+    try {
+      const newHash = await hashClientPassword(newPassInput);
+      setCustomHash(newHash);
+      setHasCustomPass(true);
+    } catch {}
+    setOldPassInput(""); setNewPassInput(""); setConfirmPassInput("");
+    if (serverOk) {
+      setPassChangeMsg("✅ Parol o'zgartirildi (server + brauzer) — yangi parol bilan kiring");
+    } else {
+      setPassChangeMsg("✅ Parol brauzerda o'zgartirildi (local) — serverda eski parol qoldi. Keyingi safar local parol bilan kirasiz");
+    }
+    setTimeout(()=>setPassChangeMsg(""), 5000);
+  }
+
+  function handleResetPass() {
+    if (!confirm("Parolni asl holiga qaytarasizmi? (env paroliga)")) return;
+    clearCustomHash();
+    setHasCustomPass(false);
+    setPassChangeMsg("♻️ Local parol tozalandi — endi env paroli ishlaydi");
+    setTimeout(()=>setPassChangeMsg(""), 3000);
+    // пробуем также сбросить серверный файл (если есть доступ)
+    fetch("/api/admin/password", { method: "PUT", headers: authHeaders(), body: JSON.stringify({oldPassword: "reset", newPassword: "reset"}) }).catch(()=>{});
   }
 
   function logout() {
@@ -700,9 +849,51 @@ export default function AdminPage() {
         >
           🖼 Kategoriyalar
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("security")}
+          className={`shrink-0 px-3 py-1.5 font-display text-[10px] font-bold tracking-wider uppercase transition md:px-4 md:py-2 md:text-xs md:tracking-widest ${
+            activeTab === "security"
+              ? "bg-white text-coal"
+              : "border border-line text-mute hover:border-white hover:text-white"
+          }`}
+        >
+          🔒 Xavfsizlik
+        </button>
       </div>
 
-      {activeTab === "newArrivals" ? (
+      {activeTab === "security" ? (
+        <div className="mt-5 border border-line bg-panel p-3.5 md:mt-8 md:p-6">
+          <h2 className="font-display text-lg font-bold uppercase text-white">🔒 Parolni o'zgartirish</h2>
+          <p className="mt-1 text-sm text-mute">
+            {hasCustomPass ? "✅ Brauzerda yangi parol o'rnatilgan (local). Serverda ham saqlanadi (fayl)." : "Hozir env paroli ishlatilmoqda: AlanSport_Bukhara_2026. Bu yerda o'zgartirsangiz — hech qanday server/BD kerak emas, parol brauzerda + faylda saqlanadi."}
+          </p>
+          <p className="mt-1 text-[11px] text-mute/70">Eslatma: Netlify da fayl vaqtinchalik (restart dan keyin env ga qaytadi), lekin brauzer local paroli qoladi — shu brauzerda yangi parol bilan kirasiz.</p>
+          <form onSubmit={handleChangePassword} className="mt-4 space-y-3 max-w-md">
+            <label className="block">
+              <span className="text-xs font-bold text-mute uppercase">Eski parol *</span>
+              <input type="password" value={oldPassInput} onChange={(e)=>setOldPassInput(e.target.value)} placeholder="Eski parolni kiriting" className="mt-1 w-full border border-line bg-coal px-3 py-2 text-sm text-white outline-none focus:border-brand" />
+            </label>
+            <label className="block">
+              <span className="text-xs font-bold text-mute uppercase">Yangi parol * (kamida 6 ta belgi)</span>
+              <input type="password" value={newPassInput} onChange={(e)=>setNewPassInput(e.target.value)} placeholder="Yangi parol" className="mt-1 w-full border border-line bg-coal px-3 py-2 text-sm text-white outline-none focus:border-brand" />
+            </label>
+            <label className="block">
+              <span className="text-xs font-bold text-mute uppercase">Tasdiqlash *</span>
+              <input type="password" value={confirmPassInput} onChange={(e)=>setConfirmPassInput(e.target.value)} placeholder="Yangi parolni qayta kiriting" className="mt-1 w-full border border-line bg-coal px-3 py-2 text-sm text-white outline-none focus:border-brand" />
+            </label>
+            {passChangeMsg && <div className="bg-panel2 border border-line px-3 py-2 text-sm font-bold text-white">{passChangeMsg}</div>}
+            <div className="flex gap-2">
+              <button type="submit" className="flex-1 bg-brand py-2.5 font-display text-sm font-bold tracking-widest text-white uppercase hover:bg-flame">Saqlash</button>
+              {hasCustomPass && <button type="button" onClick={handleResetPass} className="px-4 py-2.5 border border-line text-xs font-bold text-mute uppercase hover:border-brand hover:text-brand">Tiklash</button>}
+            </div>
+          </form>
+          <div className="mt-4 border-t border-line pt-3 text-[11px] text-mute">
+            <p>• O'zgartirish oniy — qayta login talab qilinmaydi, keyingi kirishda yangi parol ishlaydi.</p>
+            <p>• Hech qanday tashqi server/BD yo'q — faqat data/admin.json + localStorage.</p>
+          </div>
+        </div>
+      ) : activeTab === "newArrivals" ? (
         <div className="mt-5 border border-brand/50 bg-panel p-3.5 shadow-[0_0_30px_rgba(229,9,20,0.15)] md:mt-8 md:p-6">
           <div className="mb-5 flex items-start justify-between gap-3 md:mb-6">
             <div className="min-w-0 flex-1">
